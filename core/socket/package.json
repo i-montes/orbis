@@ -1,0 +1,5 @@
+{
+  "name": "@orbis/socket",
+  "module": "src/index.ts",
+  "type": "module"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "@orbis/memor",
+  "module": "src/index.ts",
+  "type": "module"
+}

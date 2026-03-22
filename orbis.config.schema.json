@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "orbis.config.schema.json",
+  "title": "Orbis Config",
+  "type": "object",
+  "required": ["version", "name"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "string" },
+    "name": { "type": "string" },
+
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "default": "./data" }
+      }
+    },
+
+    "memor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "database": { "type": "string", "default": "memor.db" },
+        "recency_lambda": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.1 },
+        "embedding": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "provider": { "type": "string", "enum": ["local", "openai", "ollama"], "default": "local" },
+            "model": { "type": "string", "default": "nomic-embed-text" },
+            "dimensions": { "type": "integer", "minimum": 64, "default": 768 }
+          }
+        },
+        "hnsw": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "m": { "type": "integer", "minimum": 2, "default": 16 },
+            "ef_construction": { "type": "integer", "minimum": 16, "default": 200 }
+          }
+        }
+      }
+    },
+
+    "socket": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "port": { "type": "integer", "minimum": 1024, "maximum": 65535, "default": 3001 },
+        "host": { "type": "string", "default": "localhost" }
+      }
+    },
+
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "transport": { "type": "string", "enum": ["stdio", "http"], "default": "stdio" }
+      }
+    },
+
+    "logger": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": { "type": "string", "enum": ["debug", "info", "warn", "error"], "default": "info" },
+        "format": { "type": "string", "enum": ["pretty", "json"], "default": "pretty" }
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "./orbis.config.schema.json",
+  "version": "1.0.0",
+  "name": "orbis",
+
+  "data": {
+    "path": "./data"
+  },
+
+  "memor": {
+    "enabled": true,
+    "database": "memor.db",
+    "recency_lambda": 0.1,
+    "embedding": {
+      "provider": "local",
+      "model": "nomic-embed-text",
+      "dimensions": 768
+    },
+    "hnsw": {
+      "m": 16,
+      "ef_construction": 200
+    }
+  },
+
+  "socket": {
+    "enabled": true,
+    "port": 3001,
+    "host": "localhost"
+  },
+
+  "mcp": {
+    "enabled": true,
+    "transport": "stdio"
+  },
+
+  "logger": {
+    "level": "info",
+    "format": "pretty"
+  }
+}
