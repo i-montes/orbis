@@ -1,5 +1,12 @@
 {
   "name": "@orbis/memor",
   "module": "src/index.ts",
+  "scripts": {
+    "build": "bun x tsc",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@orbis/shared": "workspace:*"
+  },
   "type": "module"
 }

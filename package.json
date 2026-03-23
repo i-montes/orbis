@@ -2,10 +2,15 @@
   "name": "orbis",
   "module": "main.ts",
   "type": "module",
+  "workspaces": [
+    "core/*",
+    "apps/*"
+  ],
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
+    "@types/bun": "latest",
     "typescript": "^5"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
   }
 }
