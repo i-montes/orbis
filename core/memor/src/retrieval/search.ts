@@ -50,35 +50,54 @@ export async function search(
     }))
     .filter(c => !!c.memory);
 
-  // 5. Optional Graph Expansion
+  // 5. Optional Graph Expansion (Optimized for Boosting)
   if (options.expandGraph) {
     const edges = store.getEdgesForMemories(initialMemoryIds);
-    const candidateScores = new Map(candidates.map(c => [c.memoryId, calculateSemanticScore(c.distance!)]));
-    const expandedIds = new Set<string>();
+    
+    // Ensure all initial candidates have their semanticScore calculated
+    candidates.forEach(c => {
+      if (c.semanticScore === undefined) {
+        c.semanticScore = calculateSemanticScore(c.distance!);
+      }
+    });
+
+    const candidateScores = new Map(candidates.map(c => [c.memoryId, c.semanticScore!]));
     const neighborsToLoad: { id: string, score: number }[] = [];
 
     for (const edge of edges) {
-      // Find which side is the neighbor
-      const isSourceCandidate = candidateScores.has(edge.sourceId);
-      const parentId = isSourceCandidate ? edge.sourceId : edge.targetId;
-      const neighborId = isSourceCandidate ? edge.targetId : edge.sourceId;
+      const sourceScore = candidateScores.get(edge.sourceId) || 0;
+      const targetScore = candidateScores.get(edge.targetId) || 0;
+      
+      // Determine parent node (highest score) and neighbor
+      const parentScore = Math.max(sourceScore, targetScore);
+      const neighborId = sourceScore > targetScore ? edge.targetId : edge.sourceId;
 
-      // Skip if neighbor is already a direct semantic candidate (usually better score there)
-      if (candidateScores.has(neighborId)) continue;
+      // BOOSTING FORMULA: Use max between edge weight and parent score, with a small decay (0.95)
+      const inheritedScore = Math.max(parentScore, edge.weight) * 0.95;
+      const currentScore = candidateScores.get(neighborId) || 0;
 
-      const parentScore = candidateScores.get(parentId)!;
-      const inheritedScore = parentScore * edge.weight;
-
-      // Keep only the best inherited score if found via multiple paths
-      const existing = expandedIds.has(neighborId) ? neighborsToLoad.find(n => n.id === neighborId) : null;
-      if (!existing) {
-        expandedIds.add(neighborId);
-        neighborsToLoad.push({ id: neighborId, score: inheritedScore });
-      } else if (inheritedScore > existing.score) {
-        existing.score = inheritedScore;
+      // If the path through the graph is better than direct vector (or it's a new neighbor)
+      if (inheritedScore > currentScore) {
+        if (candidateScores.has(neighborId)) {
+          // REINFORCEMENT: Update existing candidate score
+          const candidate = candidates.find(c => c.memoryId === neighborId);
+          if (candidate) {
+            candidate.semanticScore = inheritedScore;
+            candidateScores.set(neighborId, inheritedScore);
+          }
+        } else {
+          // EXPANSION: New neighbor to load
+          const existing = neighborsToLoad.find(n => n.id === neighborId);
+          if (!existing) {
+            neighborsToLoad.push({ id: neighborId, score: inheritedScore });
+          } else if (inheritedScore > existing.score) {
+            existing.score = inheritedScore;
+          }
+        }
       }
     }
 
+    // Bulk load new neighbors
     if (neighborsToLoad.length > 0) {
       const neighborMemories = store.getMemoriesByIds(neighborsToLoad.map(n => n.id));
       const neighborMemMap = new Map(neighborMemories.map(m => [m.id, m]));

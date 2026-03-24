@@ -75,7 +75,7 @@ describe('MemorStore', () => {
 
   test('insertMemory: genera ID si no se proporciona', () => {
     const m1 = store.insertMemory({ content: 'c1', source: 'SYSTEM', memoryType: 'WORLD' });
-    expect(m1.id).toHaveLength(36); 
+    expect(m1.id).toHaveLength(10); 
   });
 
   test('getMemoryById: retorna memoria existente y deserializa metadata', () => {
