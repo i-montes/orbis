@@ -17,6 +17,11 @@ export interface OrbisEmbeddingProvider {
   readonly dimensions: number;
 
   /**
+   * (Optional) Initializes the provider, e.g. checking if it's running, pulling models, etc.
+   */
+  initialize?(): Promise<void>;
+
+  /**
    * Generates a vector embedding for a single string.
    */
   embed(text: string): Promise<number[]>;

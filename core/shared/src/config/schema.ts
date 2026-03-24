@@ -29,9 +29,36 @@ export const configSchema = z.object({
     database: z.string().default('memor.db'),
     recency_lambda: z.number().min(0).max(1).default(0.1),
     embedding: z.object({
-      default: z.string().optional(),
-      providers: z.record(z.string(), embeddingProviderSchema).optional().default({}),
-    }).default({ providers: {} }),
+      default: z.string().default('ollama-qwen'),
+      providers: z.record(z.string(), embeddingProviderSchema).optional().default({
+        'ollama-qwen': {
+          type: 'ollama' as const,
+          model: 'qwen3-embedding:0.6b',
+          dimensions: 1024,
+          baseUrl: 'http://localhost:11434'
+        },
+        'openai-small': {
+          type: 'openai' as const,
+          model: 'text-embedding-3-small',
+          dimensions: 1536
+        }
+      }),
+    }).default({
+      default: 'ollama-qwen',
+      providers: {
+        'ollama-qwen': {
+          type: 'ollama' as const,
+          model: 'qwen3-embedding:0.6b',
+          dimensions: 1024,
+          baseUrl: 'http://localhost:11434'
+        },
+        'openai-small': {
+          type: 'openai' as const,
+          model: 'text-embedding-3-small',
+          dimensions: 1536
+        }
+      }
+    }),
     hnsw: z.object({
       m: z.number().int().min(2).default(16),
       ef_construction: z.number().int().min(16).default(200),
@@ -40,7 +67,22 @@ export const configSchema = z.object({
     enabled: true,
     database: 'memor.db',
     recency_lambda: 0.1,
-    embedding: { providers: {} },
+    embedding: {
+      default: 'ollama-qwen',
+      providers: {
+        'ollama-qwen': {
+          type: 'ollama' as const,
+          model: 'qwen3-embedding:0.6b',
+          dimensions: 1024,
+          baseUrl: 'http://localhost:11434'
+        },
+        'openai-small': {
+          type: 'openai' as const,
+          model: 'text-embedding-3-small',
+          dimensions: 1536
+        }
+      }
+    },
     hnsw: { m: 16, ef_construction: 200 }
   }),
 

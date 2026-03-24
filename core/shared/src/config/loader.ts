@@ -6,7 +6,15 @@ import { createLogger } from '../logger/logger.js';
 import { findProjectRoot } from '../utils/root.js';
 
 let cachedConfig: OrbisConfig | null = null;
+let currentConfigPath: string | null = null;
 let isConfigLoading = false;
+
+/**
+ * Manually sets the cached configuration (useful for tests).
+ */
+export function setConfig(config: OrbisConfig | null): void {
+  cachedConfig = config;
+}
 
 /**
  * Returns the loaded config as a singleton.
@@ -26,12 +34,20 @@ export function getConfig(): OrbisConfig {
  * 3. Default values (creates the file if missing in root)
  */
 export function loadConfig(customPath?: string, forceReload: boolean = false): OrbisConfig {
-  if (forceReload) {
+  const envPath = process.env.ORBIS_CONFIG_PATH;
+  const rawPath = customPath || envPath || 'orbis.config.json';
+  const projectRoot = findProjectRoot();
+  
+  // Resolve path: if relative, make it relative to project root
+  const configPath = isAbsolute(rawPath) ? rawPath : resolve(projectRoot, rawPath);
+
+  if (forceReload || configPath !== currentConfigPath) {
     cachedConfig = null;
+    currentConfigPath = configPath;
   }
 
   // Only return cache if NO custom path is provided AND NOT forcing reload
-  if (cachedConfig && !customPath && !forceReload) {
+  if (cachedConfig && !forceReload) {
     return cachedConfig;
   }
 
@@ -40,13 +56,6 @@ export function loadConfig(customPath?: string, forceReload: boolean = false): O
   }
 
   isConfigLoading = true;
-  
-  const envPath = process.env.ORBIS_CONFIG_PATH;
-  const rawPath = customPath || envPath || 'orbis.config.json';
-  const projectRoot = findProjectRoot();
-  
-  // Resolve path: if relative, make it relative to project root
-  const configPath = isAbsolute(rawPath) ? rawPath : resolve(projectRoot, rawPath);
 
   try {
     const defaults = configSchema.parse({});

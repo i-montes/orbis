@@ -6,6 +6,7 @@ const logger = createLogger('memor:embedding:manager');
 
 export class EmbeddingManager {
   private provider: OrbisEmbeddingProvider;
+  private initialized: boolean = false;
 
   constructor(private store: MemorStore, providerAlias?: string) {
     this.provider = createEmbeddingProvider(providerAlias);
@@ -13,10 +14,23 @@ export class EmbeddingManager {
   }
 
   /**
+   * (Optional) Initializes the underlying provider if needed.
+   */
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+    if (this.provider.initialize) {
+      logger.info(`Initializing provider: ${this.provider.model}...`);
+      await this.provider.initialize();
+    }
+    this.initialized = true;
+  }
+
+  /**
    * Generates an embedding for the given text and stores it in the database associated with the memoryId.
    * If an embedding already exists but was generated with a different model, it warns and replaces it.
    */
   async generateAndStore(memoryId: string, text: string): Promise<void> {
+    await this.initialize();
     try {
       // 1. Check existing embedding
       const existing = this.store.getEmbedding(memoryId);
@@ -55,6 +69,7 @@ export class EmbeddingManager {
    */
   async generateAndStoreMany(items: { memoryId: string; text: string }[]): Promise<void> {
     if (items.length === 0) return;
+    await this.initialize();
 
     try {
       // Extract texts to embed

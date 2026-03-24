@@ -9,12 +9,16 @@ env.allowLocalModels = true;
 env.useBrowserCache = false;
 
 export class LocalEmbeddingProvider implements OrbisEmbeddingProvider {
-  public readonly model: string = 'minishlab/potion-base-32M';
-  public readonly dimensions: number = 256;
+  public readonly model: string = 'Xenova/all-MiniLM-L6-v2';
+  public readonly dimensions: number = 384;
   
   private extractorPromise: Promise<any> | null = null;
 
   constructor() {}
+
+  async initialize(): Promise<void> {
+    await this.getExtractor();
+  }
 
   /**
    * Lazy loads the model from HuggingFace Hub.
@@ -23,9 +27,7 @@ export class LocalEmbeddingProvider implements OrbisEmbeddingProvider {
   private async getExtractor() {
     if (!this.extractorPromise) {
       logger.info(`Initializing local embedding model (${this.model}). This may take a while the first time as it downloads to ~/.cache/huggingface...`);
-      this.extractorPromise = pipeline('feature-extraction', this.model, {
-        dtype: 'fp32', // ensure we get standard floats
-      }).catch(err => {
+      this.extractorPromise = pipeline('feature-extraction', this.model).catch(err => {
         this.extractorPromise = null;
         throw new EmbeddingError(`Failed to load local model ${this.model}: ${err.message}`, 'LOCAL_MODEL_LOAD_ERROR', err);
       });
@@ -59,10 +61,9 @@ export class LocalEmbeddingProvider implements OrbisEmbeddingProvider {
       const output = await extractor(texts, { pooling: 'mean', normalize: true });
       
       // The output tensor for batches has shape [batch_size, dimensions]
-      // We need to slice the flat output.data into individual arrays
       const batchSize = texts.length;
-      const result: number[][] = [];
       const flatData = output.data;
+      const result: number[][] = [];
 
       for (let i = 0; i < batchSize; i++) {
         const start = i * this.dimensions;

@@ -136,6 +136,11 @@ Al guardar un recuerdo nuevo, se buscan los N más similares. Si la similitud su
 - Archivos en `kebab-case`
 - Carpetas en `kebab-case`
 
+## Testing
+- **Master Runner**: Todos los tests del proyecto deben poder ejecutarse de forma centralizada a través de `test-master.test.ts` en la raíz.
+- **Ejecución**: Usa `bun run test` para ejecutar la suite completa de pruebas.
+- **Nuevos Tests**: Si creas un nuevo archivo de test, asegúrate de importarlo en `test-master.test.ts` para mantener la cobertura del runner principal.
+
 
 ## Principios que guían cada decisión
 

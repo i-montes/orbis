@@ -28,6 +28,12 @@ describe("Config Loader", () => {
     const config = loadConfig(TEST_CONFIG, true);
     expect(config.name).toBe("orbis");
     expect(existsSync(testPath)).toBe(true);
+
+    // Verify embedding defaults
+    expect(config.memor.embedding.default).toBe("ollama-qwen");
+    expect(config.memor.embedding.providers["ollama-qwen"]).toBeDefined();
+    expect(config.memor.embedding.providers["ollama-qwen"]?.model).toBe("qwen3-embedding:0.6b");
+    expect(config.memor.embedding.providers["ollama-qwen"]?.dimensions).toBe(1024);
   });
 
   it("throws ConfigError with correct field when invalid value", () => {
@@ -43,11 +49,13 @@ describe("Config Loader", () => {
 });
 
 describe("Logger", () => {
-  const mainConfigPath = resolve(root, "orbis.config.json");
+  afterEach(() => {
+    if (existsSync(testPath)) unlinkSync(testPath);
+  });
 
   it("format pretty includes timestamp and module", () => {
-    if (existsSync(mainConfigPath)) unlinkSync(mainConfigPath);
-    loadConfig(undefined, true); // ensure defaults
+    if (existsSync(testPath)) unlinkSync(testPath);
+    loadConfig(TEST_CONFIG, true); // ensure defaults in a safe test path
     const spy = spyOn(process.stdout, "write");
     const logger = createLogger("test-logger");
     logger.info("Hello");

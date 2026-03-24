@@ -9,13 +9,17 @@ export class OpenAIEmbeddingProvider implements OrbisEmbeddingProvider {
   public readonly dimensions: number;
   private ai: ReturnType<typeof createAISDK>;
   private providerModel: any;
+  private config: EmbeddingProviderConfig;
 
   constructor(config: EmbeddingProviderConfig) {
     this.model = config.model;
     this.dimensions = config.dimensions;
     this.ai = createAISDK();
+    this.config = config;
+  }
 
-    const apiKey = config.apiKey || process.env.OPENAI_API_KEY;
+  async initialize(): Promise<void> {
+    const apiKey = this.config.apiKey || process.env.OPENAI_API_KEY;
     if (!apiKey) {
       throw new EmbeddingError(
         "No se encontró API key para OpenAI. Declara 'apiKey' en el config del provider o define OPENAI_API_KEY en .env",
@@ -28,6 +32,7 @@ export class OpenAIEmbeddingProvider implements OrbisEmbeddingProvider {
   }
 
   async embed(text: string): Promise<number[]> {
+    if (!this.providerModel) await this.initialize();
     try {
       const { embedding } = await this.ai.embed({
         model: this.providerModel,
@@ -45,6 +50,7 @@ export class OpenAIEmbeddingProvider implements OrbisEmbeddingProvider {
   }
 
   async embedMany(texts: string[]): Promise<number[][]> {
+    if (!this.providerModel) await this.initialize();
     try {
       const { embeddings } = await this.ai.embedMany({
         model: this.providerModel,

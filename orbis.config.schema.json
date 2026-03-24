@@ -29,9 +29,22 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "default": { "type": "string" },
+            "default": { "type": "string", "default": "ollama-qwen" },
             "providers": {
               "type": "object",
+              "default": {
+                "ollama-qwen": {
+                  "type": "ollama",
+                  "model": "qwen3-embedding:0.6b",
+                  "dimensions": 1024,
+                  "baseUrl": "http://localhost:11434"
+                },
+                "openai-small": {
+                  "type": "openai",
+                  "model": "text-embedding-3-small",
+                  "dimensions": 1536
+                }
+              },
               "additionalProperties": {
                 "type": "object",
                 "required": ["type", "model", "dimensions"],

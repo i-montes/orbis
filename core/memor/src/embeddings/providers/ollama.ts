@@ -1,32 +1,93 @@
-import { createAISDK, EmbeddingError, createLogger, type EmbeddingProviderConfig } from '@orbis/shared';
-import { createOllama } from 'ollama-ai-provider';
+import { EmbeddingError, createLogger, type EmbeddingProviderConfig } from '@orbis/shared';
 import type { OrbisEmbeddingProvider } from '../provider.js';
+import { spawn } from 'child_process';
 
 const logger = createLogger('memor:embedding:ollama');
 
 export class OllamaEmbeddingProvider implements OrbisEmbeddingProvider {
   public readonly model: string;
   public readonly dimensions: number;
-  private ai: ReturnType<typeof createAISDK>;
-  private providerModel: any;
+  private baseUrl: string;
 
   constructor(config: EmbeddingProviderConfig) {
     this.model = config.model;
     this.dimensions = config.dimensions;
-    this.ai = createAISDK();
+    this.baseUrl = config.baseUrl || 'http://localhost:11434';
+  }
 
-    const ollama = createOllama({
-      baseURL: config.baseUrl || 'http://localhost:11434',
-    });
-    this.providerModel = ollama.textEmbeddingModel(this.model);
+  async initialize(): Promise<void> {
+    await this.ensureOllamaRunning();
+    await this.ensureModelExists();
+  }
+
+  private async ensureOllamaRunning(): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/tags`);
+      if (response.ok) return;
+    } catch (e) {
+      logger.info('Ollama no está corriendo. Intentando iniciar...');
+      
+      const proc = spawn('ollama', ['serve'], {
+        detached: true,
+        stdio: 'ignore'
+      });
+      proc.unref();
+
+      for (let i = 0; i < 30; i++) {
+        try {
+          const res = await fetch(`${this.baseUrl}/api/tags`);
+          if (res.ok) {
+            logger.info('Ollama iniciado correctamente.');
+            return;
+          }
+        } catch (err) {}
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      throw new EmbeddingError('No se pudo iniciar Ollama automáticamente. Por favor, ejecútalo manualmente.', 'AUTO_START_FAILED');
+    }
+  }
+
+  private async ensureModelExists(): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/tags`);
+      const data = (await response.json()) as { models: { name: string }[] };
+      const exists = data.models.some(m => m.name === this.model || m.name.startsWith(`${this.model}:`));
+
+      if (!exists) {
+        logger.info(`Modelo '${this.model}' no encontrado. Descargando...`);
+        const pullRes = await fetch(`${this.baseUrl}/api/pull`, {
+          method: 'POST',
+          body: JSON.stringify({ name: this.model, stream: false })
+        });
+
+        if (!pullRes.ok) {
+          throw new Error(`Error al descargar modelo: ${pullRes.statusText}`);
+        }
+        logger.info(`Modelo '${this.model}' descargado con éxito.`);
+      }
+    } catch (error: any) {
+      throw new EmbeddingError(`Error al verificar/descargar el modelo '${this.model}': ${error.message}`, 'MODEL_SETUP_FAILED', error);
+    }
   }
 
   async embed(text: string): Promise<number[]> {
     try {
-      const { embedding } = await this.ai.embed({
-        model: this.providerModel,
-        value: text,
+      const response = await fetch(`${this.baseUrl}/api/embeddings`, {
+        method: 'POST',
+        body: JSON.stringify({
+          model: this.model,
+          prompt: text,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error((errorData as any).message || response.statusText);
+      }
+
+      const data = (await response.json()) as { embedding: number[] };
+      const embedding = data.embedding;
 
       if (embedding.length !== this.dimensions) {
         throw new EmbeddingError(
@@ -37,26 +98,16 @@ export class OllamaEmbeddingProvider implements OrbisEmbeddingProvider {
       return embedding;
     } catch (error: any) {
       this.translateError(error);
-      throw error; // Fallback if translation didn't throw
+      throw error;
     }
   }
 
   async embedMany(texts: string[]): Promise<number[][]> {
+    // Ollama's /api/embeddings does not support batching natively in a single call with an array of prompts
+    // in the same way as OpenAI, but we can parallelize.
     try {
-      const { embeddings } = await this.ai.embedMany({
-        model: this.providerModel,
-        values: texts,
-      });
-
-      for (const embedding of embeddings) {
-        if (embedding.length !== this.dimensions) {
-           throw new EmbeddingError(
-            `Ollama returned ${embedding.length} dimensions, but ${this.dimensions} were configured.`,
-            'DIMENSION_MISMATCH'
-          );
-        }
-      }
-      return embeddings;
+      const results = await Promise.all(texts.map(text => this.embed(text)));
+      return results;
     } catch (error: any) {
       this.translateError(error);
       throw error;
@@ -64,12 +115,11 @@ export class OllamaEmbeddingProvider implements OrbisEmbeddingProvider {
   }
 
   private translateError(error: any): never {
+    if (error instanceof EmbeddingError) throw error;
+    
     if (error.code === 'ECONNREFUSED' || error.message?.includes('fetch failed')) {
-      throw new EmbeddingError(`Ollama no está corriendo. Ejecuta 'ollama serve' para iniciarlo.`, 'CONNECTION_REFUSED', error);
+      throw new EmbeddingError(`Ollama no está corriendo.`, 'CONNECTION_REFUSED', error);
     }
-    if (error.message?.includes('not found') || error.status === 404) {
-      throw new EmbeddingError(`El modelo '${this.model}' no está disponible. Ejecuta 'ollama pull ${this.model}' para descargarlo.`, 'MODEL_NOT_FOUND', error);
-    }
-    throw new EmbeddingError(`Ollama embed error: ${error.message}`, 'OLLAMA_ERROR', error);
+    throw new EmbeddingError(`Ollama error: ${error.message}`, 'OLLAMA_ERROR', error);
   }
 }
