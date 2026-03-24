@@ -29,9 +29,22 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "provider": { "type": "string", "enum": ["local", "openai", "ollama"], "default": "local" },
-            "model": { "type": "string", "default": "nomic-embed-text" },
-            "dimensions": { "type": "integer", "minimum": 64, "default": 768 }
+            "default": { "type": "string" },
+            "providers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "required": ["type", "model", "dimensions"],
+                "additionalProperties": false,
+                "properties": {
+                  "type": { "type": "string", "enum": ["ollama", "openai"] },
+                  "model": { "type": "string" },
+                  "dimensions": { "type": "integer", "minimum": 64 },
+                  "baseUrl": { "type": "string" },
+                  "apiKey": { "type": "string" }
+                }
+              }
+            }
           }
         },
         "hnsw": {

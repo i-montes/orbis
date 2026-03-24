@@ -4,17 +4,28 @@
 export type RelationType = 'related_to' | 'contradicts' | 'elaborates' | 'causes' | 'precedes';
 
 /**
+ * Valid sources for a memory
+ */
+export type MemorySource = 'AGENT' | 'SYSTEM' | 'USER' | 'GROUP';
+
+/**
+ * Categorization of memories
+ */
+export type MemoryType = 'EXPERIENCE' | 'DECISION' | 'FACT' | 'TASK' | 'WORLD';
+
+/**
  * Basic memory unit
  */
 export interface Memory {
   id: string;
   content: string;
   summary?: string;
+  source: MemorySource;
+  memoryType: MemoryType;
   createdAt: number; // Unix timestamp in milliseconds
+  updatedAt: number; // Unix timestamp in milliseconds
   lastAccessedAt?: number;
   accessCount: number;
-  source?: string;
-  memoryType: 'EXPERIENCE' | 'DECISION' | 'FACT' | 'TASK' | 'WORLD';
   metadata?: Record<string, unknown>;
 }
 

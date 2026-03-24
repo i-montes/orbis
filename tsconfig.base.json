@@ -21,6 +21,14 @@
 
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    "noPropertyAccessFromIndexSignature": false,
+
+    "baseUrl": ".",
+    "paths": {
+      "@orbis/shared": ["./core/shared/src/index.ts"],
+      "@orbis/memor": ["./core/memor/src/index.ts"],
+      "@orbis/cli": ["./core/cli/src/index.ts"],
+      "@orbis/orbis": ["./core/orbis/src/index.ts"]
+    }
   }
 }

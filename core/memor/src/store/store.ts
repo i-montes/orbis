@@ -1,12 +1,10 @@
 import { Database } from 'bun:sqlite';
 import { runMigrations } from './migrations/index.js';
-import { createLogger, DatabaseError, getConfig, generateId, type Memory } from '@orbis/shared';
+import { createLogger, DatabaseError, getConfig, generateId, findProjectRoot, type Memory, type EmbeddingVector } from '@orbis/shared';
 import { mkdirSync, statSync } from 'fs';
-import { dirname, join } from 'path';
+import { dirname, join, isAbsolute } from 'path';
 
 const logger = createLogger('memor:store');
-
-export type InsertMemoryParams = Omit<Memory, 'id' | 'accessCount'> & { id?: string };
 
 export class MemorStore {
   private db: Database;
@@ -18,7 +16,9 @@ export class MemorStore {
         this.dbPath = customPath;
       } else {
         const config = getConfig();
-        this.dbPath = join(config.data.path, config.memor.database);
+        const projectRoot = findProjectRoot();
+        const rawPath = join(config.data.path, config.memor.database);
+        this.dbPath = isAbsolute(rawPath) ? rawPath : join(projectRoot, rawPath);
       }
 
       mkdirSync(dirname(this.dbPath), { recursive: true });
@@ -47,11 +47,18 @@ export class MemorStore {
     }
   }
 
-  insertMemory(memoryInput: InsertMemoryParams): Memory {
+  /**
+   * Inserts a new memory into the store.
+   * Generates an ID if none is provided.
+   */
+  insertMemory(memoryInput: Omit<Memory, 'accessCount' | 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Memory {
+    const now = Date.now();
     const memory: Memory = {
       ...memoryInput,
       id: memoryInput.id || generateId(),
-      accessCount: 0
+      accessCount: 0,
+      createdAt: now,
+      updatedAt: now
     };
 
     const stmt = this.db.prepare(`
@@ -67,13 +74,13 @@ export class MemorStore {
         memory.id,
         memory.content,
         memory.summary || null,
-        memory.source || 'SYSTEM',
+        memory.source,
         memory.memoryType,
         memory.metadata ? JSON.stringify(memory.metadata) : null,
         memory.accessCount,
         memory.lastAccessedAt || null,
         memory.createdAt,
-        Date.now()
+        memory.updatedAt
       );
       return memory;
     } catch (error) {
@@ -94,6 +101,10 @@ export class MemorStore {
     }
   }
 
+  /**
+   * Updates last_accessed_at and increments access_count.
+   * Does nothing if the ID doesn't exist.
+   */
   updateAccessStats(id: string): void {
     const stmt = this.db.prepare(`
       UPDATE memories
@@ -168,6 +179,72 @@ export class MemorStore {
     }
   }
 
+  /**
+   * Insert or replace an embedding for a memory.
+   * Converts the number[] vector to a Buffer (Float32Array) for SQLite BLOB storage.
+   */
+  upsertEmbedding(embedding: EmbeddingVector): void {
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO embeddings (memory_id, vector, model, dimensions, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    try {
+      const floatArray = new Float32Array(embedding.vector);
+      const buffer = Buffer.from(floatArray.buffer);
+
+      stmt.run(
+        embedding.memoryId,
+        buffer,
+        embedding.model,
+        embedding.dimensions,
+        embedding.createdAt || Date.now()
+      );
+    } catch (error) {
+      throw new DatabaseError(`Failed to upsert embedding for memory ${embedding.memoryId}`, 'UPSERT_EMBEDDING_FAILED', error);
+    }
+  }
+
+  /**
+   * Retrieves an embedding for a memory.
+   * Converts the SQLite BLOB (Buffer) back to a number[].
+   */
+  getEmbedding(memoryId: string): EmbeddingVector | null {
+    const stmt = this.db.prepare('SELECT * FROM embeddings WHERE memory_id = ?');
+    
+    try {
+      const row = stmt.get(memoryId) as any;
+      if (!row) return null;
+
+      const buffer = row.vector as Buffer;
+      const floatArray = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / Float32Array.BYTES_PER_ELEMENT);
+      
+      return {
+        memoryId: row.memory_id,
+        vector: Array.from(floatArray),
+        model: row.model,
+        dimensions: row.dimensions,
+        createdAt: row.created_at
+      };
+    } catch (error) {
+      throw new DatabaseError(`Failed to get embedding for memory ${memoryId}`, 'GET_EMBEDDING_FAILED', error);
+    }
+  }
+
+  /**
+   * Deletes an embedding. Note that embeddings are usually deleted via CASCADE when a memory is deleted.
+   */
+  deleteEmbedding(memoryId: string): boolean {
+    const stmt = this.db.prepare('DELETE FROM embeddings WHERE memory_id = ?');
+    
+    try {
+      const result = stmt.run(memoryId);
+      return result.changes > 0;
+    } catch (error) {
+      throw new DatabaseError(`Failed to delete embedding for memory ${memoryId}`, 'DELETE_EMBEDDING_FAILED', error);
+    }
+  }
+
   private mapRowToMemory(row: any): Memory {
     return {
       id: row.id,
@@ -178,7 +255,8 @@ export class MemorStore {
       metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
       accessCount: row.access_count,
       lastAccessedAt: row.last_accessed_at,
-      createdAt: row.created_at
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
     };
   }
 }
