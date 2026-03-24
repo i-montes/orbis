@@ -72,6 +72,24 @@ export class Memor {
   }
 
   /**
+   * Clears all data from the memory store.
+   */
+  reset(): void {
+    this.store.reset();
+  }
+
+  /**
+   * Returns current statistics of the memory store.
+   */
+  getStats() {
+    return {
+      memories: this.store.countMemories(),
+      edges: this.store.countEdges(),
+      sizeBytes: this.store.getDatabaseSize()
+    };
+  }
+
+  /**
    * Closes the underlying database connection.
    */
   close(): void {

@@ -17,7 +17,8 @@ describe('Graph-Augmented Retrieval', () => {
       ...originalConfig,
       memor: {
         ...originalConfig.memor,
-        autoEdgeThreshold: 0.40 // even lower to ensure linking
+        autoEdgeThreshold: 0.60, // moderate threshold
+        embedding: { providers: {} } // Force fallback to LocalEmbeddingProvider (Xenova/bge-m3)
       }
     });
 

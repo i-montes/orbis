@@ -10,12 +10,12 @@ env.useBrowserCache = false;
 
 export class LocalEmbeddingProvider implements OrbisEmbeddingProvider {
   /**
-   * We use bge-large-en-v1.5-quantized because:
+   * We use bge-m3 because:
    * 1. It provides 1024 dimensions (consistent with Qwen3 Ollama)
    * 2. It's highly compatible with Transformers.js and ONNX runtime
-   * 3. It's optimized for local execution without memory overhead
+   * 3. It's multilingual and correctly calculates semantic similarity for Spanish text
    */
-  public readonly model: string = 'Xenova/bge-large-en-v1.5';
+  public readonly model: string = 'Xenova/bge-m3';
   public readonly dimensions: number = 1024;
   
   // Use a static singleton to avoid reloading the large model multiple times

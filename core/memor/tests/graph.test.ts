@@ -13,12 +13,13 @@ describe('Auto-Linking Graph', () => {
   beforeEach(async () => {
     originalConfig = { ...getConfig() };
     
-    // Set a predictable threshold for testing
+    // Set a predictable threshold for testing and force local provider
     setConfig({
       ...originalConfig,
       memor: {
         ...originalConfig.memor,
-        autoEdgeThreshold: 0.60 // lower threshold to guarantee linking for the test
+        autoEdgeThreshold: 0.60, // use 0.60 for local provider
+        embedding: { providers: {} } // Force fallback to LocalEmbeddingProvider (Xenova/bge-m3)
       }
     });
 

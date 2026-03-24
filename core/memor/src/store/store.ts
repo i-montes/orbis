@@ -259,6 +259,35 @@ export class MemorStore {
     }
   }
 
+  countEdges(): number {
+    const stmt = this.db.prepare('SELECT COUNT(*) as count FROM edges');
+    
+    try {
+      const result = stmt.get() as { count: number };
+      return result.count;
+    } catch (error) {
+      throw new DatabaseError('Failed to count edges', 'COUNT_EDGES_FAILED', error);
+    }
+  }
+
+  /**
+   * Clears all data from the database.
+   */
+  reset(): void {
+    try {
+      this.db.transaction(() => {
+        this.db.exec('DELETE FROM memories');
+        this.db.exec('DELETE FROM embeddings');
+        this.db.exec('DELETE FROM edges');
+        this.db.exec('DELETE FROM session_memories');
+        this.db.exec('DELETE FROM memory_vectors');
+      })();
+      logger.info('Database reset successful');
+    } catch (error) {
+      throw new DatabaseError('Failed to reset database', 'RESET_FAILED', error);
+    }
+  }
+
   getDatabaseSize(): number {
     try {
       const stats = statSync(this.dbPath);
