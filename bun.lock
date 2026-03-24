@@ -4,23 +4,71 @@
   "workspaces": {
     "": {
       "name": "orbis",
+      "dependencies": {
+        "zod": "^4.3.6",
+      },
       "devDependencies": {
         "@types/bun": "latest",
-      },
-      "peerDependencies": {
         "typescript": "^5",
       },
     },
+    "apps/dashboard": {
+      "name": "dashboard",
+      "version": "0.1.0",
+    },
+    "core/cli": {
+      "name": "@orbis/cli",
+      "version": "0.1.0",
+    },
+    "core/mcp": {
+      "name": "@orbis/mcp",
+    },
+    "core/memor": {
+      "name": "@orbis/memor",
+      "dependencies": {
+        "@orbis/shared": "workspace:*",
+      },
+    },
+    "core/orbis": {
+      "name": "@orbis/orbis",
+      "version": "0.1.0",
+    },
+    "core/shared": {
+      "name": "@orbis/shared",
+      "version": "0.1.0",
+      "dependencies": {
+        "zod": "^4.3.6",
+      },
+    },
+    "core/socket": {
+      "name": "@orbis/socket",
+    },
   },
   "packages": {
+    "@orbis/cli": ["@orbis/cli@workspace:core/cli"],
+
+    "@orbis/mcp": ["@orbis/mcp@workspace:core/mcp"],
+
+    "@orbis/memor": ["@orbis/memor@workspace:core/memor"],
+
+    "@orbis/orbis": ["@orbis/orbis@workspace:core/orbis"],
+
+    "@orbis/shared": ["@orbis/shared@workspace:core/shared"],
+
+    "@orbis/socket": ["@orbis/socket@workspace:core/socket"],
+
     "@types/bun": ["@types/bun@1.3.11", "", { "dependencies": { "bun-types": "1.3.11" } }, "sha512-5vPne5QvtpjGpsGYXiFyycfpDF2ECyPcTSsFBMa0fraoxiQyMJ3SmuQIGhzPg2WJuWxVBoxWJ2kClYTcw/4fAg=="],
 
     "@types/node": ["@types/node@25.5.0", "", { "dependencies": { "undici-types": "~7.18.0" } }, "sha512-jp2P3tQMSxWugkCUKLRPVUpGaL5MVFwF8RDuSRztfwgN1wmqJeMSbKlnEtQqU8UrhTmzEmZdu2I6v2dpp7XIxw=="],
 
     "bun-types": ["bun-types@1.3.11", "", { "dependencies": { "@types/node": "*" } }, "sha512-1KGPpoxQWl9f6wcZh57LvrPIInQMn2TQ7jsgxqpRzg+l0QPOFvJVH7HmvHo/AiPgwXy+/Thf6Ov3EdVn1vOabg=="],
 
+    "dashboard": ["dashboard@workspace:apps/dashboard"],
+
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "undici-types": ["undici-types@7.18.2", "", {}, "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="],
+
+    "zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
   }
 }
