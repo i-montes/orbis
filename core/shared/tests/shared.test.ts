@@ -56,7 +56,7 @@ describe("Logger", () => {
   it("format pretty includes timestamp and module", () => {
     if (existsSync(testPath)) unlinkSync(testPath);
     loadConfig(TEST_CONFIG, true); // ensure defaults in a safe test path
-    const spy = spyOn(process.stdout, "write");
+    const spy = spyOn(process.stderr, "write");
     const logger = createLogger("test-logger");
     logger.info("Hello");
     // Get last call to avoid interference
@@ -71,7 +71,7 @@ describe("Logger", () => {
     writeFileSync(jsonPath, JSON.stringify({ logger: { format: "json" } }), "utf8");
     loadConfig("orbis.json.test", true);
     
-    const spy = spyOn(process.stdout, "write");
+    const spy = spyOn(process.stderr, "write");
     const logger = createLogger("test-json");
     logger.info("Hello JSON");
     const output = spy.mock.calls[spy.mock.calls.length - 1]![0] as string;
@@ -88,7 +88,7 @@ describe("Logger", () => {
     writeFileSync(levelPath, JSON.stringify({ logger: { level: "warn" } }), "utf8");
     loadConfig("orbis.level.test", true);
 
-    const spy = spyOn(process.stdout, "write");
+    const spy = spyOn(process.stderr, "write");
     const logger = createLogger("test-level");
     const callsBefore = spy.mock.calls.length;
     logger.info("Should not see this");

@@ -42,8 +42,8 @@ export class Logger {
         formatted = formatPretty(level, this.module, message, meta);
       }
 
-      // 3. Write directly to stdout
-      process.stdout.write(formatted);
+      // 3. Write directly to stderr to preserve stdout for protocols like MCP
+      process.stderr.write(formatted);
     } catch (e) {
       // Logger never throws
     }

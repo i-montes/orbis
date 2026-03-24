@@ -1,5 +1,8 @@
 {
   "name": "@orbis/socket",
   "module": "src/index.ts",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "build": "bun x tsc"
+  }
 }

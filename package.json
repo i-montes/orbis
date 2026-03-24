@@ -16,8 +16,10 @@
   "scripts": {
     "orbis": "bun main.ts",
     "test": "bun test test-master.test.ts && bun scripts/cleanup-tests.ts",
-    "build": "bun run --filter \"./core/*\" build",
+    "build": "bun run --filter \"*\" build",
     "typecheck": "bun x tsc --project tsconfig.base.json",
-    "clean": "bun scripts/cleanup-tests.ts"
+    "clean": "bun scripts/cleanup-tests.ts",
+    "mcp": "bun run --cwd core/mcp start",
+    "mcp-inspector": "npx @modelcontextprotocol/inspector bun run --cwd core/mcp start"
   }
 }

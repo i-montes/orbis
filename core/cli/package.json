@@ -5,6 +5,9 @@
   "bin": {
     "orbis": "./src/index.ts"
   },
+  "scripts": {
+    "build": "bun x tsc"
+  },
   "dependencies": {
     "@orbis/shared": "workspace:*"
   }
