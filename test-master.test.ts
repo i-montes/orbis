@@ -14,3 +14,6 @@ import "./core/memor/tests/embeddings.test.ts";
 
 // Phase 4: Retrieval & Ranking (Search layer)
 import "./core/memor/tests/retrieval.test.ts";
+
+// Phase 5: Auto-Linking (Graph layer)
+import "./core/memor/tests/graph.test.ts";

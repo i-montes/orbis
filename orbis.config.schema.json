@@ -25,6 +25,7 @@
         "enabled": { "type": "boolean", "default": true },
         "database": { "type": "string", "default": "memor.db" },
         "recency_lambda": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.1 },
+        "autoEdgeThreshold": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.85 },
         "embedding": {
           "type": "object",
           "additionalProperties": false,

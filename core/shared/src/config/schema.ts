@@ -28,6 +28,7 @@ export const configSchema = z.object({
     enabled: z.boolean().default(true),
     database: z.string().default('memor.db'),
     recency_lambda: z.number().min(0).max(1).default(0.1),
+    autoEdgeThreshold: z.number().min(0).max(1).default(0.85),
     embedding: z.object({
       default: z.string().default('ollama-qwen'),
       providers: z.record(z.string(), embeddingProviderSchema).optional().default({
@@ -67,6 +68,7 @@ export const configSchema = z.object({
     enabled: true,
     database: 'memor.db',
     recency_lambda: 0.1,
+    autoEdgeThreshold: 0.85,
     embedding: {
       default: 'ollama-qwen',
       providers: {

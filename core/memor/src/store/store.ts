@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite';
 import * as sqliteVec from 'sqlite-vec';
 import { runMigrations } from './migrations/index.js';
-import { createLogger, DatabaseError, getConfig, generateId, findProjectRoot, type Memory, type EmbeddingVector } from '@orbis/shared';
+import { createLogger, DatabaseError, getConfig, generateId, findProjectRoot, type Memory, type EmbeddingVector, type RelationType } from '@orbis/shared';
 import { mkdirSync, statSync } from 'fs';
 import { dirname, join, isAbsolute } from 'path';
 import { VectorIndex } from '../vectors/index.js';
@@ -130,6 +130,29 @@ export class MemorStore {
         .filter((m): m is Memory => !!m);
     } catch (error) {
       throw new DatabaseError('Failed to get memories in batch', 'GET_MEMORIES_BATCH_FAILED', error);
+    }
+  }
+
+  /**
+   * Adds an edge (relationship) between two memories.
+   */
+  addEdge(sourceId: string, targetId: string, type: RelationType = 'related_to', weight: number = 1.0): void {
+    const stmt = this.db.prepare(`
+      INSERT INTO edges (id, source_id, target_id, relation_type, weight, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    try {
+      stmt.run(
+        generateId(),
+        sourceId,
+        targetId,
+        type,
+        weight,
+        Date.now()
+      );
+    } catch (error) {
+      throw new DatabaseError(`Failed to add edge from ${sourceId} to ${targetId}`, 'ADD_EDGE_FAILED', error);
     }
   }
 
