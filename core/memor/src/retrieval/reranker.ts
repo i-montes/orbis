@@ -3,7 +3,8 @@ import { calculateSemanticScore, calculateRecencyScore, calculateCombinedScore }
 
 export interface CandidateResult {
   memoryId: string;
-  distance: number;
+  distance?: number;
+  semanticScore?: number;
   memory: Memory;
 }
 
@@ -17,7 +18,7 @@ export interface RerankOptions {
  */
 export function rerank(candidates: CandidateResult[], options: RerankOptions): SearchResult[] {
   const scored = candidates.map(candidate => {
-    const semantic = calculateSemanticScore(candidate.distance);
+    const semantic = candidate.semanticScore ?? (candidate.distance !== undefined ? calculateSemanticScore(candidate.distance) : 0);
     const recency = calculateRecencyScore(candidate.memory.createdAt, options.lambda);
     const combined = calculateCombinedScore(semantic, recency);
 

@@ -18,7 +18,8 @@ export class LocalEmbeddingProvider implements OrbisEmbeddingProvider {
   public readonly model: string = 'Xenova/bge-large-en-v1.5';
   public readonly dimensions: number = 1024;
   
-  private extractorPromise: Promise<any> | null = null;
+  // Use a static singleton to avoid reloading the large model multiple times
+  private static extractorPromise: Promise<any> | null = null;
 
   constructor() {}
 
@@ -31,17 +32,17 @@ export class LocalEmbeddingProvider implements OrbisEmbeddingProvider {
    * Caches the promise to avoid concurrent initializations.
    */
   private async getExtractor() {
-    if (!this.extractorPromise) {
+    if (!LocalEmbeddingProvider.extractorPromise) {
       logger.info(`Initializing local embedding model (${this.model}). This may take a while the first time as it downloads to ~/.cache/huggingface...`);
       // Use any to bypass strict type checking for library-specific options
-      this.extractorPromise = pipeline('feature-extraction', this.model, {
+      LocalEmbeddingProvider.extractorPromise = pipeline('feature-extraction', this.model, {
         quantized: true,
       } as any).catch(err => {
-        this.extractorPromise = null;
+        LocalEmbeddingProvider.extractorPromise = null;
         throw new EmbeddingError(`Failed to load local model ${this.model}: ${err.message}`, 'LOCAL_MODEL_LOAD_ERROR', err);
       });
     }
-    return this.extractorPromise;
+    return LocalEmbeddingProvider.extractorPromise;
   }
 
   async embed(text: string): Promise<number[]> {

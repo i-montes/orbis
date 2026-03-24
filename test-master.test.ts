@@ -17,3 +17,6 @@ import "./core/memor/tests/retrieval.test.ts";
 
 // Phase 5: Auto-Linking (Graph layer)
 import "./core/memor/tests/graph.test.ts";
+
+// Phase 6: Graph-Augmented Retrieval
+import "./core/memor/tests/graph-retrieval.test.ts";

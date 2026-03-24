@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite';
 import * as sqliteVec from 'sqlite-vec';
 import { runMigrations } from './migrations/index.js';
-import { createLogger, DatabaseError, getConfig, generateId, findProjectRoot, type Memory, type EmbeddingVector, type RelationType } from '@orbis/shared';
+import { createLogger, DatabaseError, getConfig, generateId, findProjectRoot, type Memory, type EmbeddingVector, type RelationType, type MemoryEdge } from '@orbis/shared';
 import { mkdirSync, statSync } from 'fs';
 import { dirname, join, isAbsolute } from 'path';
 import { VectorIndex } from '../vectors/index.js';
@@ -153,6 +153,34 @@ export class MemorStore {
       );
     } catch (error) {
       throw new DatabaseError(`Failed to add edge from ${sourceId} to ${targetId}`, 'ADD_EDGE_FAILED', error);
+    }
+  }
+
+  /**
+   * Retrieves all edges where any of the provided IDs is a source or target.
+   */
+  getEdgesForMemories(ids: string[]): MemoryEdge[] {
+    if (ids.length === 0) return [];
+
+    const placeholders = ids.map(() => '?').join(',');
+    const stmt = this.db.prepare(`
+      SELECT * FROM edges 
+      WHERE source_id IN (${placeholders}) 
+         OR target_id IN (${placeholders})
+    `);
+    
+    try {
+      const rows = stmt.all(...ids, ...ids) as any[];
+      return rows.map(row => ({
+        id: row.id,
+        sourceId: row.source_id,
+        targetId: row.target_id,
+        relationType: row.relation_type,
+        weight: row.weight,
+        createdAt: row.created_at
+      }));
+    } catch (error) {
+      throw new DatabaseError('Failed to get edges for memories', 'GET_EDGES_FAILED', error);
     }
   }
 
