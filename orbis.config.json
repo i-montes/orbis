@@ -10,9 +10,7 @@
     "database": "memor.db",
     "recency_lambda": 0.1,
     "embedding": {
-      "provider": "local",
-      "model": "nomic-embed-text",
-      "dimensions": 768
+      "providers": {}
     },
     "hnsw": {
       "m": 16,

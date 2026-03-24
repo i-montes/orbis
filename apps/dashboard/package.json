@@ -1,5 +1,5 @@
 {
-  "name": "dashboard",
+  "name": "@orbis/dashboard",
   "version": "0.1.0",
   "type": "module"
 }

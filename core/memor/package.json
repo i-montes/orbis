@@ -6,7 +6,10 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@orbis/shared": "workspace:*"
+    "@ai-sdk/openai": "^3.0.48",
+    "@huggingface/transformers": "^3.8.1",
+    "@orbis/shared": "workspace:*",
+    "ollama-ai-provider": "^1.2.0"
   },
   "type": "module"
 }

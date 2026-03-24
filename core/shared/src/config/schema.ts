@@ -1,5 +1,16 @@
 import { z } from 'zod';
 
+export const embeddingProviderSchema = z.object({
+  type: z.enum(['ollama', 'openai']),
+  model: z.string(),
+  dimensions: z.number().int().min(64),
+  baseUrl: z.string().optional(),
+  apiKey: z.string().optional(),
+});
+
+export type EmbeddingProviderConfig = z.infer<typeof embeddingProviderSchema>;
+export type EmbeddingProvidersMap = Record<string, EmbeddingProviderConfig>;
+
 /**
  * Zod schema for Orbis configuration.
  * This should match orbis.config.schema.json.
@@ -18,10 +29,9 @@ export const configSchema = z.object({
     database: z.string().default('memor.db'),
     recency_lambda: z.number().min(0).max(1).default(0.1),
     embedding: z.object({
-      provider: z.enum(['local', 'openai', 'ollama']).default('local'),
-      model: z.string().default('nomic-embed-text'),
-      dimensions: z.number().int().min(64).default(768),
-    }).default({ provider: 'local', model: 'nomic-embed-text', dimensions: 768 }),
+      default: z.string().optional(),
+      providers: z.record(z.string(), embeddingProviderSchema).optional().default({}),
+    }).default({ providers: {} }),
     hnsw: z.object({
       m: z.number().int().min(2).default(16),
       ef_construction: z.number().int().min(16).default(200),
@@ -30,7 +40,7 @@ export const configSchema = z.object({
     enabled: true,
     database: 'memor.db',
     recency_lambda: 0.1,
-    embedding: { provider: 'local', model: 'nomic-embed-text', dimensions: 768 },
+    embedding: { providers: {} },
     hnsw: { m: 16, ef_construction: 200 }
   }),
 
