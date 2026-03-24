@@ -1,21 +1,22 @@
-import { getConfig, type Memory, createLogger } from '@orbis/shared';
+import { getConfig, type Memory, createLogger, type RelationType } from '@orbis/shared';
 import { MemorStore } from './store/store.js';
 import { EmbeddingManager } from './embeddings/manager.js';
-import { VectorIndex } from './vectors/index.js';
+import { type VectorIndex } from './vectors/index.js';
+import { GraphManager } from './graph/manager.js';
 import { search, type SearchOptions } from './retrieval/search.js';
 import { calculateSemanticScore } from './retrieval/scoring.js';
 
 const logger = createLogger('memor:core');
 
 export class Memor {
-  public store: MemorStore;
-  public manager: EmbeddingManager;
-  public vectorIndex: VectorIndex;
+  private store: MemorStore;
+  private manager: EmbeddingManager;
+  private graph: GraphManager;
 
   constructor(customDbPath?: string) {
     this.store = new MemorStore(customDbPath);
     this.manager = new EmbeddingManager(this.store);
-    this.vectorIndex = new VectorIndex((this.store as any).db);
+    this.graph = new GraphManager(this.store.db);
   }
 
   /**
@@ -37,7 +38,7 @@ export class Memor {
       if (embedding) {
         // Search for nearest neighbors
         const N = 5;
-        const neighbors = this.vectorIndex.search(embedding.vector, N + 1); // +1 because it will find itself
+        const neighbors = this.store.vectorIndex.search(embedding.vector, N + 1); // +1 because it will find itself
         
         const threshold = config.memor.autoEdgeThreshold ?? 0.85;
         
@@ -47,7 +48,7 @@ export class Memor {
           
           const semanticScore = calculateSemanticScore(neighbor.distance);
           if (semanticScore >= threshold) {
-            this.store.addEdge(memory.id, neighbor.memoryId, 'related_to', semanticScore);
+            this.graph.addEdge(memory.id, neighbor.memoryId, 'related_to', semanticScore);
             edgesCreated++;
           }
         }
@@ -65,10 +66,17 @@ export class Memor {
   }
 
   /**
-   * Performs a vector search with recency decay.
+   * Performs a vector search with recency decay and graph expansion.
    */
   async search(query: string, options: SearchOptions): ReturnType<typeof search> {
-    return search(query, this.store, this.vectorIndex, this.manager, options);
+    return search(query, this.store, this.store.vectorIndex, this.manager, this.graph, options);
+  }
+
+  /**
+   * Adds an edge (relationship) between two memories.
+   */
+  addEdge(sourceId: string, targetId: string, type: RelationType = 'related_to', weight: number = 1.0): void {
+    this.graph.addEdge(sourceId, targetId, type, weight);
   }
 
   /**
@@ -84,7 +92,7 @@ export class Memor {
   getStats() {
     return {
       memories: this.store.countMemories(),
-      edges: this.store.countEdges(),
+      edges: this.graph.countEdges(),
       sizeBytes: this.store.getDatabaseSize()
     };
   }

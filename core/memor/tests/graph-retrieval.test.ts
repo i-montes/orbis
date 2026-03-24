@@ -25,7 +25,7 @@ describe('Graph-Augmented Retrieval', () => {
     memor = new Memor(testDbPath);
     
     // Clear data between tests
-    const db = (memor.store as any).db;
+    const db = (memor as any).store.db;
     db.exec('DELETE FROM memories');
     db.exec('DELETE FROM embeddings');
     db.exec('DELETE FROM memory_vectors');
@@ -71,7 +71,7 @@ describe('Graph-Augmented Retrieval', () => {
     });
 
     // Verify they are linked
-    const db = (memor.store as any).db;
+    const db = (memor as any).store.db;
     const edge = db.prepare('SELECT * FROM edges WHERE (source_id = ? AND target_id = ?) OR (source_id = ? AND target_id = ?)')
                    .get(memA.id, memB.id, memB.id, memA.id);
     expect(edge).not.toBeNull();

@@ -2,6 +2,7 @@ import { normalizeText, type SearchResult } from '@orbis/shared';
 import { type MemorStore } from '../store/store.js';
 import { type VectorIndex } from '../vectors/index.js';
 import { type EmbeddingManager } from '../embeddings/manager.js';
+import { type GraphManager } from '../graph/manager.js';
 import { rerank, type CandidateResult } from './reranker.js';
 import { calculateSemanticScore } from './scoring.js';
 
@@ -21,6 +22,7 @@ export async function search(
   store: MemorStore,
   vectorIndex: VectorIndex,
   embeddingManager: EmbeddingManager,
+  graphManager: GraphManager,
   options: SearchOptions
 ): Promise<SearchResult[]> {
   // 1. Normalize query
@@ -52,7 +54,7 @@ export async function search(
 
   // 5. Optional Graph Expansion (Optimized for Boosting)
   if (options.expandGraph) {
-    const edges = store.getEdgesForMemories(initialMemoryIds);
+    const edges = graphManager.getEdgesForMemories(initialMemoryIds);
     
     // Ensure all initial candidates have their semanticScore calculated
     candidates.forEach(c => {

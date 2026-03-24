@@ -26,7 +26,7 @@ describe('Auto-Linking Graph', () => {
     memor = new Memor(testDbPath);
     
     // Clear data between tests
-    const db = (memor.store as any).db;
+    const db = (memor as any).store.db;
     db.exec('DELETE FROM memories');
     db.exec('DELETE FROM embeddings');
     db.exec('DELETE FROM memory_vectors');
@@ -72,7 +72,7 @@ describe('Auto-Linking Graph', () => {
     });
 
     // 3. Verify that an edge was created from B to A
-    const db = (memor.store as any).db;
+    const db = (memor as any).store.db;
     const stmt = db.prepare('SELECT * FROM edges WHERE source_id = ? AND target_id = ?');
     const edge = stmt.get(memB.id, memA.id) as any;
 

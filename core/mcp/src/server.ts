@@ -166,7 +166,7 @@ export class OrbisMCPServer {
         }
 
         try {
-          this.memor.store.addEdge(parsed.data.sourceId, parsed.data.targetId, parsed.data.relationType, 1.0);
+          this.memor.addEdge(parsed.data.sourceId, parsed.data.targetId, parsed.data.relationType, 1.0);
           return {
             content: [
               {

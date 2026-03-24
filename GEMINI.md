@@ -17,12 +17,12 @@ La base de todo. No importa nada de los otros paquetes del proyecto.
 
 ### `@orbis/memor`
 El sistema de memoria. Depende solo de `@orbis/shared`.
-Internamente organizado en subsistemas:
-- `store/` — queries SQLite y migraciones
-- `vectors/` — sqlite-vec e índice HNSW
-- `graph/` — relaciones entre recuerdos
-- `retrieval/` — búsqueda semántica + recency_lambda
-- `embeddings/` — proveedores de embeddings
+La clase `Memor` actúa como fachada única y punto de entrada público. Internamente, delega responsabilidades a:
+- `store/` — `MemorStore`: Persistencia SQL (SQLite), migraciones y gestión de embeddings. Posee el `VectorIndex`.
+- `vectors/` — `VectorIndex`: Operaciones vectoriales con `sqlite-vec`.
+- `graph/` — `GraphManager`: Gestión de relaciones (edges) entre recuerdos y lógica de grafo.
+- `retrieval/` — Orquestación de búsqueda semántica, expansión de grafo y `recency_lambda`.
+- `embeddings/` — `EmbeddingManager`: Gestión de proveedores y generación de vectores.
 
 ### `@orbis/socket`
 Servidor WebSocket. Depende de `@orbis/shared`.
@@ -30,7 +30,7 @@ Comunica eventos del sistema a clientes externos (dashboard, herramientas).
 
 ### `@orbis/mcp`
 Servidor Model Context Protocol. Depende de `@orbis/shared` y `@orbis/memor`.
-Expone herramientas de memoria al modelo: `memory_store`, `memory_search`, `memory_forget`, `memory_relate`.
+Expone herramientas de memoria al modelo a través de la API pública de `Memor`: `memory_store`, `memory_search`, `memory_forget`, `memory_relate`.
 
 ### `@orbis/cli`
 Interfaz de línea de comandos. Depende de todos los paquetes anteriores.
@@ -55,7 +55,7 @@ El grafo de dependencias es estrictamente unidireccional. Nunca hay dependencias
 @orbis/shared
 ```
 
-**Regla absoluta**: un paquete solo puede importar de paquetes que estén por debajo suyo en este grafo. `@orbis/shared` no importa nada del proyecto. `@orbis/memor` solo importa de `@orbis/shared`. Nunca al revés.
+**Regla absoluta de encapsulación**: Los consumidores de `@orbis/memor` (como MCP o CLI) deben interactuar EXCLUSIVAMENTE con la clase `Memor`. No se permite el acceso directo a `MemorStore`, `GraphManager` o `EmbeddingManager` desde fuera del paquete.
 
 ---
 
@@ -135,6 +135,12 @@ Al guardar un recuerdo nuevo, se buscan los N más similares. Si la similitud su
 - `UPPER_SNAKE_CASE` para constantes
 - Archivos en `kebab-case`
 - Carpetas en `kebab-case`
+
+## Utilidades y Formatos de Datos
+
+### Identificadores (IDs)
+- **generateId()**: Genera un ID de **10 caracteres alfanuméricos** (ej: `aB7cD9eF2G`). 
+- **Razón**: Optimización de tokens en el historial del agente comparado con UUIDs de 36 caracteres. Los tests deben validar contra esta longitud.
 
 ## Testing
 - **Master Runner**: Todos los tests del proyecto deben poder ejecutarse de forma centralizada a través de `test-master.test.ts` en la raíz.

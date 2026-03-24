@@ -5,6 +5,7 @@ import { unlinkSync, existsSync } from 'fs';
 import { MemorStore } from '../src/store/store.js';
 import { VectorIndex } from '../src/vectors/index.js';
 import { EmbeddingManager } from '../src/embeddings/manager.js';
+import { GraphManager } from '../src/graph/manager.js';
 import { search } from '../src/retrieval/search.js';
 import { calculateRecencyScore, calculateCombinedScore, calculateSemanticScore } from '../src/retrieval/scoring.js';
 import { normalizeVector } from '../src/vectors/similarity.js';
@@ -15,22 +16,23 @@ describe('Retrieval & Ranking', () => {
   let store: MemorStore;
   let manager: EmbeddingManager;
   let vectorIndex: VectorIndex;
+  let graph: GraphManager;
   let originalConfig: any;
 
   beforeAll(async () => {
     store = new MemorStore(testDbPath);
     manager = new EmbeddingManager(store);
-    vectorIndex = new VectorIndex((store as any).db);
+    vectorIndex = store.vectorIndex;
+    graph = new GraphManager(store.db);
   }, { timeout: 120000 });
 
   beforeEach(async () => {
     originalConfig = { ...getConfig() };
-    const db = (store as any).db;
+    const db = store.db;
     db.exec('DELETE FROM memories');
     db.exec('DELETE FROM embeddings');
     db.exec('DELETE FROM memory_vectors');
     db.exec('DELETE FROM edges');
-    db.exec('DELETE FROM sessions');
     db.exec('DELETE FROM session_memories');
   });
 
@@ -126,7 +128,7 @@ describe('Retrieval & Ranking', () => {
   describe('search() Orchestration', () => {
     test('Relevancia semántica: encuentra el recuerdo más parecido', async () => {
       await seedBasicMemories();
-      const results = await search('Háblame sobre lenguajes de programación', store, vectorIndex, manager, {
+      const results = await search('Háblame sobre lenguajes de programación', store, vectorIndex, manager, graph, {
         topK: 1
       });
       expect(results[0]!.memory.content).toContain('JavaScript');
@@ -134,7 +136,7 @@ describe('Retrieval & Ranking', () => {
 
     test('topK: limita los resultados', async () => {
       await seedBasicMemories();
-      const results = await search('agentes', store, vectorIndex, manager, {
+      const results = await search('agentes', store, vectorIndex, manager, graph, {
         topK: 3
       });
       expect(results.length).toBe(3);
@@ -144,7 +146,7 @@ describe('Retrieval & Ranking', () => {
       const id = (await seedBasicMemories())[1]!.id;
       const initial = store.getMemoryById(id)?.accessCount || 0;
       
-      await search('tortilla', store, vectorIndex, manager, { topK: 1 });
+      await search('tortilla', store, vectorIndex, manager, graph, { topK: 1 });
       
       const updated = store.getMemoryById(id)?.accessCount || 0;
       expect(updated).toBe(initial + 1);
@@ -161,11 +163,11 @@ describe('Retrieval & Ranking', () => {
       ]);
 
       const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-      const db = (store as any).db;
+      const db = store.db;
       db.exec(`UPDATE memories SET created_at = ${thirtyDaysAgo} WHERE id = '${m1.id}'`);
       db.exec(`UPDATE embeddings SET created_at = ${thirtyDaysAgo} WHERE memory_id = '${m1.id}'`);
 
-      const resultsRecency = await search(content, store, vectorIndex, manager, { topK: 10, lambda: 2 });
+      const resultsRecency = await search(content, store, vectorIndex, manager, graph, { topK: 10, lambda: 2 });
       expect(resultsRecency[0]!.memory.id).toBe(m2.id); 
       const oldRes = resultsRecency.find(r => r.memory.id === m1.id);
       expect(oldRes!.recencyScore).toBeLessThan(0.001);
@@ -173,7 +175,7 @@ describe('Retrieval & Ranking', () => {
 
     test('SearchResult: contiene todos los scores requeridos', async () => {
       await seedBasicMemories();
-      const results = await search('Francia', store, vectorIndex, manager, { topK: 1 });
+      const results = await search('Francia', store, vectorIndex, manager, graph, { topK: 1 });
       const r = results[0]!;
       expect(r.semanticScore).toBeDefined();
       expect(r.recencyScore).toBeDefined();

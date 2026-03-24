@@ -2,6 +2,7 @@ export * from './store/store.js';
 export * from './embeddings/manager.js';
 export * from './embeddings/provider.js';
 export * from './vectors/index.js';
+export * from './graph/manager.js';
 export * from './retrieval/search.js';
 export * from './retrieval/reranker.js';
 export * from './retrieval/scoring.js';

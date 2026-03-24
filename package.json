@@ -10,9 +10,7 @@
     "@types/bun": "latest",
     "typescript": "^5"
   },
-  "dependencies": {
-    "zod": "^4.3.6"
-  },
+  "dependencies": {},
   "scripts": {
     "orbis": "bun main.ts",
     "setup": "bun scripts/setup.ts",
@@ -21,6 +19,6 @@
     "typecheck": "bun x tsc --project tsconfig.base.json",
     "clean": "bun scripts/cleanup-tests.ts",
     "mcp": "bun run --cwd core/mcp start",
-    "mcp-inspector": "npx @modelcontextprotocol/inspector bun run --cwd core/mcp start"
+    "mcp-inspector": "bunx @modelcontextprotocol/inspector bun run --cwd core/mcp start"
   }
 }

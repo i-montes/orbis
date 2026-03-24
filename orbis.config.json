@@ -9,6 +9,7 @@
     "enabled": true,
     "database": "memor.db",
     "recency_lambda": 0.1,
+    "autoEdgeThreshold": 0.85,
     "embedding": {
       "default": "ollama-qwen",
       "providers": {
