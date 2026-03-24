@@ -137,12 +137,16 @@ describe("Event Bus", () => {
     let received: any = null;
     const listener = (p: any) => { received = p; };
     bus.on("memory:stored", listener);
-    bus.emit("memory:stored", { 
-      id: '1', 
-      content: 'test', 
-      createdAt: Date.now(), 
-      accessCount: 0 
+    bus.emit("memory:stored", {
+      id: '1',
+      content: 'test',
+      source: 'USER',
+      memoryType: 'FACT',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      accessCount: 0
     });
+
     expect(received.content).toBe("test");
     bus.off("memory:stored", listener);
   });

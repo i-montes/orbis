@@ -88,7 +88,7 @@ describe('Retrieval & Ranking', () => {
 
     test('delete(): reduce el conteo al eliminar', async () => {
       const memories = await seedBasicMemories();
-      vectorIndex.delete(memories[0].id);
+      vectorIndex.delete(memories[0]!.id);
       expect(vectorIndex.count()).toBe(4);
     });
 
@@ -98,7 +98,7 @@ describe('Retrieval & Ranking', () => {
       const results = vectorIndex.search(queryVec, 3);
       
       expect(results.length).toBe(3);
-      expect(results[0].distance).toBeLessThanOrEqual(results[1].distance);
+      expect(results[0]!.distance).toBeLessThanOrEqual(results[1]!.distance);
     });
   });
 
@@ -129,7 +129,7 @@ describe('Retrieval & Ranking', () => {
       const results = await search('Háblame sobre lenguajes de programación', store, vectorIndex, manager, {
         topK: 1
       });
-      expect(results[0].memory.content).toContain('JavaScript');
+      expect(results[0]!.memory.content).toContain('JavaScript');
     });
 
     test('topK: limita los resultados', async () => {
@@ -141,7 +141,7 @@ describe('Retrieval & Ranking', () => {
     });
 
     test('Estadísticas: incrementa accessCount', async () => {
-      const id = (await seedBasicMemories())[1].id;
+      const id = (await seedBasicMemories())[1]!.id;
       const initial = store.getMemoryById(id)?.accessCount || 0;
       
       await search('tortilla', store, vectorIndex, manager, { topK: 1 });
@@ -166,7 +166,7 @@ describe('Retrieval & Ranking', () => {
       db.exec(`UPDATE embeddings SET created_at = ${thirtyDaysAgo} WHERE memory_id = '${m1.id}'`);
 
       const resultsRecency = await search(content, store, vectorIndex, manager, { topK: 10, lambda: 2 });
-      expect(resultsRecency[0].memory.id).toBe(m2.id); 
+      expect(resultsRecency[0]!.memory.id).toBe(m2.id); 
       const oldRes = resultsRecency.find(r => r.memory.id === m1.id);
       expect(oldRes!.recencyScore).toBeLessThan(0.001);
     });
@@ -174,7 +174,7 @@ describe('Retrieval & Ranking', () => {
     test('SearchResult: contiene todos los scores requeridos', async () => {
       await seedBasicMemories();
       const results = await search('Francia', store, vectorIndex, manager, { topK: 1 });
-      const r = results[0];
+      const r = results[0]!;
       expect(r.semanticScore).toBeDefined();
       expect(r.recencyScore).toBeDefined();
       expect(r.score).toBeDefined();

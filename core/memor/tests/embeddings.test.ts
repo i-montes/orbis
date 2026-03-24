@@ -64,7 +64,7 @@ describe('Embeddings: Serialization & Providers (Offline)', () => {
     expect(retrieved?.dimensions).toBe(1024);
     
     for (let i = 0; i < originalVector.length; i++) {
-      expect(retrieved!.vector[i]).toBeCloseTo(originalVector[i]);
+      expect(retrieved!.vector[i]).toBeCloseTo(originalVector[i]!);
     }
   });
 

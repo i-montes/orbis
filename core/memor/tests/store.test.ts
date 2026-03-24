@@ -133,7 +133,7 @@ describe('MemorStore', () => {
 
     const results = store.getMemoriesBySession('s1');
     expect(results).toHaveLength(2);
-    expect(results[0].id).toBe(m2.id); 
+    expect(results[0]!.id).toBe(m2.id); 
   });
 
   test('getDatabaseSize: retorna un valor numérico positivo', () => {
