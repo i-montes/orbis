@@ -15,6 +15,7 @@
   },
   "scripts": {
     "orbis": "bun main.ts",
+    "setup": "bun scripts/setup.ts",
     "test": "bun test test-master.test.ts && bun scripts/cleanup-tests.ts",
     "build": "bun run --filter \"*\" build",
     "typecheck": "bun x tsc --project tsconfig.base.json",
