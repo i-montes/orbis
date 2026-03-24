@@ -1,14 +1,17 @@
 import { Database } from 'bun:sqlite';
+import * as sqliteVec from 'sqlite-vec';
 import { runMigrations } from './migrations/index.js';
 import { createLogger, DatabaseError, getConfig, generateId, findProjectRoot, type Memory, type EmbeddingVector } from '@orbis/shared';
 import { mkdirSync, statSync } from 'fs';
 import { dirname, join, isAbsolute } from 'path';
+import { VectorIndex } from '../vectors/index.js';
 
 const logger = createLogger('memor:store');
 
 export class MemorStore {
   private db: Database;
   private dbPath: string = '';
+  private vectorIndex: VectorIndex;
 
   constructor(customPath?: string) {
     try {
@@ -29,9 +32,14 @@ export class MemorStore {
       this.db.exec('PRAGMA foreign_keys = ON;');
       this.db.exec('PRAGMA synchronous = NORMAL;');
 
+      // Load sqlite-vec extension
+      sqliteVec.load(this.db);
+
       logger.info(`Opened database at ${this.dbPath}`);
       
       runMigrations(this.db);
+
+      this.vectorIndex = new VectorIndex(this.db);
     } catch (error) {
       if (error instanceof DatabaseError) {
         throw error;
@@ -102,6 +110,30 @@ export class MemorStore {
   }
 
   /**
+   * Batch version of getMemoryById.
+   * Returns memories in the order specified by the input IDs.
+   */
+  getMemoriesByIds(ids: string[]): Memory[] {
+    if (ids.length === 0) return [];
+
+    // Create placeholders (?, ?, ?)
+    const placeholders = ids.map(() => '?').join(',');
+    const stmt = this.db.prepare(`SELECT * FROM memories WHERE id IN (${placeholders})`);
+    
+    try {
+      const rows = stmt.all(...ids) as any[];
+      const memoryMap = new Map(rows.map(row => [row.id, this.mapRowToMemory(row)]));
+      
+      // Return in original order, filtering missing ones
+      return ids
+        .map(id => memoryMap.get(id))
+        .filter((m): m is Memory => !!m);
+    } catch (error) {
+      throw new DatabaseError('Failed to get memories in batch', 'GET_MEMORIES_BATCH_FAILED', error);
+    }
+  }
+
+  /**
    * Updates last_accessed_at and increments access_count.
    * Does nothing if the ID doesn't exist.
    */
@@ -125,7 +157,13 @@ export class MemorStore {
     
     try {
       const result = stmt.run(id);
-      return result.changes > 0;
+      const deleted = result.changes > 0;
+      
+      if (deleted) {
+        this.vectorIndex.delete(id);
+      }
+      
+      return deleted;
     } catch (error) {
       throw new DatabaseError(`Failed to delete memory ${id}`, 'DELETE_MEMORY_FAILED', error);
     }
@@ -200,6 +238,9 @@ export class MemorStore {
         embedding.dimensions,
         embedding.createdAt || Date.now()
       );
+
+      // Sync with VectorIndex
+      this.vectorIndex.insert(embedding.memoryId, embedding.vector);
     } catch (error) {
       throw new DatabaseError(`Failed to upsert embedding for memory ${embedding.memoryId}`, 'UPSERT_EMBEDDING_FAILED', error);
     }

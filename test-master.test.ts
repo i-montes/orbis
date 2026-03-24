@@ -11,3 +11,6 @@ import "./core/memor/tests/store.test.ts";
 
 // Phase 3: Embeddings & Vector Management (Intelligence layer)
 import "./core/memor/tests/embeddings.test.ts";
+
+// Phase 4: Retrieval & Ranking (Search layer)
+import "./core/memor/tests/retrieval.test.ts";

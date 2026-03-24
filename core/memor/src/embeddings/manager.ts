@@ -117,6 +117,19 @@ export class EmbeddingManager {
   }
 
   /**
+   * Generates an embedding for a query string without storing it.
+   */
+  async generateQueryVector(text: string): Promise<number[]> {
+    await this.initialize();
+    try {
+      return await this.provider.embed(text);
+    } catch (error: any) {
+      if (error instanceof EmbeddingError) throw error;
+      throw new EmbeddingError(`Failed to generate query vector: ${error.message}`, 'QUERY_EMBED_FAILED', error);
+    }
+  }
+
+  /**
    * Deletes an embedding.
    */
   deleteVector(memoryId: string): boolean {

@@ -9,8 +9,14 @@ env.allowLocalModels = true;
 env.useBrowserCache = false;
 
 export class LocalEmbeddingProvider implements OrbisEmbeddingProvider {
-  public readonly model: string = 'Xenova/all-MiniLM-L6-v2';
-  public readonly dimensions: number = 384;
+  /**
+   * We use bge-large-en-v1.5-quantized because:
+   * 1. It provides 1024 dimensions (consistent with Qwen3 Ollama)
+   * 2. It's highly compatible with Transformers.js and ONNX runtime
+   * 3. It's optimized for local execution without memory overhead
+   */
+  public readonly model: string = 'Xenova/bge-large-en-v1.5';
+  public readonly dimensions: number = 1024;
   
   private extractorPromise: Promise<any> | null = null;
 
@@ -27,7 +33,10 @@ export class LocalEmbeddingProvider implements OrbisEmbeddingProvider {
   private async getExtractor() {
     if (!this.extractorPromise) {
       logger.info(`Initializing local embedding model (${this.model}). This may take a while the first time as it downloads to ~/.cache/huggingface...`);
-      this.extractorPromise = pipeline('feature-extraction', this.model).catch(err => {
+      // Use any to bypass strict type checking for library-specific options
+      this.extractorPromise = pipeline('feature-extraction', this.model, {
+        quantized: true,
+      } as any).catch(err => {
         this.extractorPromise = null;
         throw new EmbeddingError(`Failed to load local model ${this.model}: ${err.message}`, 'LOCAL_MODEL_LOAD_ERROR', err);
       });

@@ -47,20 +47,21 @@ describe('Embeddings: Serialization & Providers (Offline)', () => {
 
   test('Store: serializa y deserializa vectores correctamente', () => {
     const memory = store.insertMemory({ content: 'vector test', source: 'SYSTEM', memoryType: 'FACT' });
-    const originalVector = [0.1, -0.2, 0.3333333432674408, 0.0]; 
+    // Vector de 1024 dimensiones para cumplir con la restricción de sqlite-vec
+    const originalVector = new Array(1024).fill(0).map((_, i) => i / 1024);
 
     store.upsertEmbedding({
       memoryId: memory.id,
       vector: originalVector,
       model: 'test-model',
-      dimensions: 4,
+      dimensions: 1024,
       createdAt: Date.now()
     });
 
     const retrieved = store.getEmbedding(memory.id);
     expect(retrieved).not.toBeNull();
     expect(retrieved?.model).toBe('test-model');
-    expect(retrieved?.dimensions).toBe(4);
+    expect(retrieved?.dimensions).toBe(1024);
     
     for (let i = 0; i < originalVector.length; i++) {
       expect(retrieved!.vector[i]).toBeCloseTo(originalVector[i]);
@@ -91,11 +92,11 @@ describe('Embeddings: Serialization & Providers (Offline)', () => {
     const manager = new EmbeddingManager(store); 
     const memory = store.insertMemory({ content: 'test', source: 'USER', memoryType: 'FACT' });
     
-    // El local Xenova/all-MiniLM-L6-v2 tiene 384 dims
+    // El local Xenova/bge-large-en-v1.5 tiene 1024 dims
     await manager.generateAndStore(memory.id, "hola");
     const vec = manager.getVector(memory.id);
-    expect(vec?.length).toBe(384);
-  });
+    expect(vec?.length).toBe(1024);
+  }, { timeout: 300000 });
 
   test('OllamaEmbeddingProvider: detección y auto-setup', async () => {
     const provider = new OllamaEmbeddingProvider({
@@ -109,12 +110,12 @@ describe('Embeddings: Serialization & Providers (Offline)', () => {
     expect(vec.length).toBe(1024);
   }, { timeout: 300000 }); 
 
-  test('LocalEmbeddingProvider: genera vector real de 384 dimensiones', async () => {
+  test('LocalEmbeddingProvider: genera vector real de 1024 dimensiones', async () => {
     const provider = new LocalEmbeddingProvider();
     await provider.initialize();
     const vec = await provider.embed("Hola mundo");
     
-    expect(vec.length).toBe(384);
+    expect(vec.length).toBe(1024);
     expect(typeof vec[0]).toBe('number');
-  }, { timeout: 60000 });
+  }, { timeout: 300000 });
 });

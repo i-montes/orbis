@@ -54,7 +54,7 @@ describe('MemorStore', () => {
     }
     
     const migration = db.prepare(`SELECT COUNT(*) as count FROM _migrations`).get() as { count: number };
-    expect(migration.count).toBe(1);
+    expect(migration.count).toBe(2);
     
     db.close();
   });
