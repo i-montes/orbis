@@ -1,5 +1,29 @@
 {
   "name": "@orbis/dashboard",
   "version": "0.1.0",
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "dev:ui": "vite",
+    "dev:server": "bun --watch src/server.ts",
+    "dev": "concurrently -n \"Server,UI\" -c \"cyan,green\" \"npm run dev:server\" \"npm run dev:ui\"",
+    "build": "vite build",
+    "start": "bun src/server.ts",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "hono": "^4.6.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-force-graph-2d": "^1.29.1",
+    "@orbis/memor": "workspace:*",
+    "@orbis/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.0",
+    "typescript": "^5.0.0",
+    "concurrently": "^9.1.0"
+  }
 }

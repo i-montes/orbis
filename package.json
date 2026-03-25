@@ -19,6 +19,7 @@
     "typecheck": "bun x tsc --project tsconfig.base.json",
     "clean": "bun scripts/cleanup-tests.ts",
     "mcp": "bun run --cwd core/mcp start",
-    "mcp-inspector": "bunx @modelcontextprotocol/inspector bun run --cwd core/mcp start"
+    "mcp-inspector": "bunx @modelcontextprotocol/inspector bun run --cwd core/mcp start",
+    "dashboard": "bun run --cwd apps/dashboard dev"
   }
 }

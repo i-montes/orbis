@@ -1,4 +1,4 @@
-import { getConfig, type Memory, createLogger, type RelationType } from '@orbis/shared';
+import { getConfig, type Memory, createLogger, type RelationType, type MemoryEdge } from '@orbis/shared';
 import { MemorStore } from './store/store.js';
 import { EmbeddingManager } from './embeddings/manager.js';
 import { type VectorIndex } from './vectors/index.js';
@@ -80,6 +80,24 @@ export class Memor {
   }
 
   /**
+   * Elimina un recuerdo de la memoria, sus embeddings y relaciones en cascada.
+   */
+  deleteMemory(id: string): boolean {
+    return this.store.deleteMemory(id);
+  }
+
+  /**
+   * Actualiza un recuerdo existente. Si el contenido cambia, se regenera su embedding.
+   */
+  async updateMemory(id: string, data: Partial<Pick<Memory, 'content' | 'summary' | 'source' | 'memoryType' | 'metadata'>>): Promise<Memory | null> {
+    const memory = this.store.updateMemory(id, data);
+    if (memory && data.content) {
+      await this.manager.generateAndStore(memory.id, memory.content);
+    }
+    return memory;
+  }
+
+  /**
    * Clears all data from the memory store.
    */
   reset(): void {
@@ -95,6 +113,20 @@ export class Memor {
       edges: this.graph.countEdges(),
       sizeBytes: this.store.getDatabaseSize()
     };
+  }
+
+  /**
+   * Retrieves all memories in the database.
+   */
+  getAllMemories(): Memory[] {
+    return this.store.getAllMemories();
+  }
+
+  /**
+   * Retrieves all edges in the database.
+   */
+  getAllEdges(): MemoryEdge[] {
+    return this.graph.getAllEdges();
   }
 
   /**

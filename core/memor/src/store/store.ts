@@ -152,6 +152,41 @@ export class MemorStore {
     }
   }
 
+  /**
+   * Updates a memory's basic fields and its updated_at timestamp.
+   */
+  updateMemory(id: string, data: Partial<Pick<Memory, 'content' | 'summary' | 'source' | 'memoryType' | 'metadata'>>): Memory | null {
+    const current = this.getMemoryById(id);
+    if (!current) return null;
+
+    const updated = {
+      ...current,
+      ...data,
+      updatedAt: Date.now()
+    };
+
+    const stmt = this.db.prepare(`
+      UPDATE memories
+      SET content = ?, summary = ?, source = ?, memory_type = ?, metadata = ?, updated_at = ?
+      WHERE id = ?
+    `);
+
+    try {
+      stmt.run(
+        updated.content,
+        updated.summary || null,
+        updated.source,
+        updated.memoryType,
+        updated.metadata ? JSON.stringify(updated.metadata) : null,
+        updated.updatedAt,
+        id
+      );
+      return updated;
+    } catch (error) {
+      throw new DatabaseError(`Failed to update memory ${id}`, 'UPDATE_MEMORY_FAILED', error);
+    }
+  }
+
   deleteMemory(id: string): boolean {
     const stmt = this.db.prepare('DELETE FROM memories WHERE id = ?');
     
@@ -170,7 +205,15 @@ export class MemorStore {
   }
 
   getAllMemories(): Memory[] {
-    const stmt = this.db.prepare('SELECT * FROM memories ORDER BY created_at DESC');
+    const stmt = this.db.prepare(`
+      SELECT m.*, (
+        SELECT COUNT(*) 
+        FROM edges e 
+        WHERE e.source_id = m.id OR e.target_id = m.id
+      ) as connection_count 
+      FROM memories m 
+      ORDER BY m.created_at DESC
+    `);
     
     try {
       const rows = stmt.all() as any[];
@@ -182,7 +225,7 @@ export class MemorStore {
 
   getMemoriesBySession(sessionId: string): Memory[] {
     const stmt = this.db.prepare(`
-      SELECT m.* 
+      SELECT m.*, 0 as connection_count
       FROM memories m
       JOIN session_memories sm ON m.id = sm.memory_id
       WHERE sm.session_id = ?
@@ -313,6 +356,7 @@ export class MemorStore {
       memoryType: row.memory_type,
       metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
       accessCount: row.access_count,
+      connectionCount: row.connection_count, // Añadido para el grafo
       lastAccessedAt: row.last_accessed_at,
       createdAt: row.created_at,
       updatedAt: row.updated_at

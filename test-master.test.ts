@@ -20,3 +20,6 @@ import "./core/memor/tests/graph.test.ts";
 
 // Phase 6: Graph-Augmented Retrieval
 import "./core/memor/tests/graph-retrieval.test.ts";
+
+// Phase 7: Lifecycle (Derecho al Olvido)
+import "./core/memor/tests/forget.test.ts";

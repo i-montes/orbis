@@ -26,6 +26,7 @@ export interface Memory {
   updatedAt: number; // Unix timestamp in milliseconds
   lastAccessedAt?: number;
   accessCount: number;
+  connectionCount?: number;
   metadata?: Record<string, unknown>;
 }
 

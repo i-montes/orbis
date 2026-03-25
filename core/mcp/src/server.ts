@@ -66,6 +66,14 @@ export class OrbisMCPServer {
                 type: 'string',
                 description: 'Consulta semántica o pregunta para buscar en la memoria.',
               },
+              limit: {
+                type: 'number',
+                description: 'Número máximo de resultados a retornar (por defecto 5).',
+              },
+              expand: {
+                type: 'boolean',
+                description: 'Si se debe expandir la búsqueda usando el grafo de relaciones (por defecto true).',
+              },
             },
             required: ['query'],
           },
@@ -91,6 +99,20 @@ export class OrbisMCPServer {
               },
             },
             required: ['sourceId', 'targetId', 'relationType'],
+          },
+        },
+        {
+          name: 'orbis_forget',
+          description: 'Elimina un recuerdo específico de la memoria si la información es incorrecta, obsoleta o irrelevante.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              memoryId: { 
+                type: 'string',
+                description: 'ID del recuerdo a eliminar.',
+              },
+            },
+            required: ['memoryId'],
           },
         },
       ],
@@ -126,7 +148,11 @@ export class OrbisMCPServer {
       }
 
       if (request.params.name === 'orbis_recall') {
-        const schema = z.object({ query: z.string() });
+        const schema = z.object({
+          query: z.string(),
+          limit: z.number().optional(),
+          expand: z.boolean().optional()
+        });
         const parsed = schema.safeParse(request.params.arguments);
         
         if (!parsed.success) {
@@ -134,8 +160,14 @@ export class OrbisMCPServer {
         }
 
         try {
-          // Búsqueda expandida por grafo, top 5 resultados por defecto
-          const results = await this.memor.search(parsed.data.query, { expandGraph: true, topK: 5 });
+          const limit = parsed.data.limit ?? 5;
+          const expand = parsed.data.expand ?? true;
+
+          // Búsqueda con parámetros dinámicos
+          const results = await this.memor.search(parsed.data.query, { 
+            expandGraph: expand, 
+            topK: limit 
+          });
           
           if (results.length === 0) {
             return {
@@ -177,6 +209,40 @@ export class OrbisMCPServer {
           };
         } catch (error: any) {
           throw new McpError(ErrorCode.InternalError, `Error al crear relación: ${error.message}`);
+        }
+      }
+
+      if (request.params.name === 'orbis_forget') {
+        const schema = z.object({ memoryId: z.string() });
+        const parsed = schema.safeParse(request.params.arguments);
+        
+        if (!parsed.success) {
+          throw new McpError(ErrorCode.InvalidParams, 'Argumentos inválidos para orbis_forget');
+        }
+
+        try {
+          const deleted = this.memor.deleteMemory(parsed.data.memoryId);
+          if (deleted) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Recuerdo ${parsed.data.memoryId} eliminado exitosamente.`,
+                },
+              ],
+            };
+          } else {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `No se encontró el recuerdo con ID: ${parsed.data.memoryId}.`,
+                },
+              ],
+            };
+          }
+        } catch (error: any) {
+          throw new McpError(ErrorCode.InternalError, `Error al eliminar recuerdo: ${error.message}`);
         }
       }
 

@@ -68,4 +68,25 @@ export class GraphManager {
       throw new DatabaseError('Failed to count edges', 'COUNT_EDGES_FAILED', error);
     }
   }
+
+  /**
+   * Retrieves all edges in the database.
+   */
+  getAllEdges(): MemoryEdge[] {
+    const stmt = this.db.prepare('SELECT * FROM edges ORDER BY created_at DESC');
+    
+    try {
+      const rows = stmt.all() as any[];
+      return rows.map(row => ({
+        id: row.id,
+        sourceId: row.source_id,
+        targetId: row.target_id,
+        relationType: row.relation_type,
+        weight: row.weight,
+        createdAt: row.created_at
+      }));
+    } catch (error) {
+      throw new DatabaseError('Failed to get all edges', 'GET_ALL_EDGES_FAILED', error);
+    }
+  }
 }
