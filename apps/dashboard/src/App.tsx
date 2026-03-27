@@ -10,6 +10,7 @@ export default function App() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchGraph = async () => {
@@ -98,6 +99,38 @@ export default function App() {
       console.error(err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedNode) return;
+    if (!confirm(`¿Estás seguro de que deseas eliminar este recuerdo? Esta acción es irreversible y eliminará todas sus conexiones.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/memories/${selectedNode.id}`, {
+        method: 'DELETE'
+      });
+
+      if (!res.ok) throw new Error('Failed to delete');
+
+      // Update local state: remove node and all related links
+      const updatedNodes = data.nodes.filter((n: any) => n.id !== selectedNode.id);
+      const updatedLinks = data.links.filter((l: any) => 
+        (l.source.id || l.source) !== selectedNode.id && 
+        (l.target.id || l.target) !== selectedNode.id
+      );
+
+      setData({ nodes: updatedNodes as never[], links: updatedLinks as never[] });
+      setSelectedNode(null);
+      setIsEditing(false);
+    } catch (err) {
+      alert('Error eliminando el recuerdo.');
+      console.error(err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -248,10 +281,17 @@ export default function App() {
             
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               {!isEditing ? (
-                <button 
-                  onClick={() => setIsEditing(true)}
-                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem' }}
-                >✏️ Editar</button>
+                <>
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem' }}
+                  >✏️ Editar</button>
+                  <button 
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    style={{ background: 'rgba(255,77,77,0.15)', border: 'none', color: '#ff4d4d', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem' }}
+                  >{isDeleting ? 'Eliminando...' : '🗑️ Eliminar'}</button>
+                </>
               ) : (
                 <>
                   <button 

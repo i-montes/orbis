@@ -74,6 +74,24 @@ app.put('/api/memories/:id', async (c) => {
   }
 });
 
+// API Endpoint to Delete a Memory
+app.delete('/api/memories/:id', async (c) => {
+  const id = c.req.param('id');
+  const memor = new Memor();
+  try {
+    const deleted = memor.deleteMemory(id);
+    if (!deleted) {
+      return c.json({ error: 'Memory not found' }, 404);
+    }
+    return c.json({ success: true, id });
+  } catch (error) {
+    console.error('Error deleting memory:', error);
+    return c.json({ error: 'Deletion Failed' }, 500);
+  } finally {
+    memor.close();
+  }
+});
+
 // Serve Vite build in Production
 app.use('/*', serveStatic({ root: './dist' }));
 
