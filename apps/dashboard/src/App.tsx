@@ -5,6 +5,7 @@ export default function App() {
   const [data, setData] = useState({ nodes: [], links: [] });
   const [loading, setLoading] = useState(true);
   const [selectedNode, setSelectedNode] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Edit State
   const [isEditing, setIsEditing] = useState(false);
@@ -157,20 +158,37 @@ export default function App() {
         left: '20px',
         color: '#eee',
         zIndex: 10,
-        pointerEvents: 'none',
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         backdropFilter: 'blur(10px)',
         padding: '20px',
         borderRadius: '12px',
         border: '1px solid rgba(255, 255, 255, 0.1)',
-        fontFamily: 'system-ui, sans-serif'
+        fontFamily: 'system-ui, sans-serif',
+        width: '300px'
       }}>
         <h1 style={{ margin: '0 0 8px 0', fontSize: '1.5rem', fontWeight: 600 }}>Memory Heatmap</h1>
-        <p style={{ margin: 0, opacity: 0.7, fontSize: '0.9rem' }}>
+        <p style={{ margin: '0 0 16px 0', opacity: 0.7, fontSize: '0.85rem' }}>
           Visualizando {data.nodes.length} recuerdos.<br/>
           <span style={{ color: '#ff4d4d', fontWeight: 'bold' }}>Color (Rojo/Oro)</span>: Más consultados.<br/>
-          <strong>Tamaño</strong>: Mayor cantidad de conexiones.
+          <strong>Tamaño</strong>: Conexiones.
         </p>
+        <input 
+          type="text" 
+          placeholder="🔍 Buscar en recuerdos..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={{
+            width: '100%',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            padding: '10px 14px',
+            color: '#fff',
+            outline: 'none',
+            fontSize: '0.9rem',
+            boxSizing: 'border-box'
+          }}
+        />
       </div>
       
       <ForceGraph2D
@@ -186,12 +204,35 @@ export default function App() {
         linkDirectionalParticleWidth={1.5}
         linkDirectionalArrowLength={3.5}
         linkDirectionalArrowRelPos={1}
-        linkColor={() => 'rgba(255, 255, 255, 0.08)'}
+        linkColor={(link: any) => {
+          if (!searchQuery) return 'rgba(255, 255, 255, 0.08)';
+          
+          const source = link.source.id || link.source;
+          const target = link.target.id || link.target;
+          const sourceNode = data.nodes.find((n: any) => n.id === source);
+          const targetNode = data.nodes.find((n: any) => n.id === target);
+          
+          if (!sourceNode || !targetNode) return 'rgba(255, 255, 255, 0.01)';
+
+          const query = searchQuery.toLowerCase();
+          const sourceMatch = (sourceNode as any).content?.toLowerCase().includes(query) || (sourceNode as any).summary?.toLowerCase().includes(query);
+          const targetMatch = (targetNode as any).content?.toLowerCase().includes(query) || (targetNode as any).summary?.toLowerCase().includes(query);
+          
+          return (sourceMatch || targetMatch) ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.01)';
+        }}
         nodeCanvasObject={(node: any, ctx, globalScale) => {
           const label = node.name;
           const fontSize = 12 / globalScale;
           const radius = node.val || 2;
           
+          // Check search match
+          const isMatch = !searchQuery || 
+            (node.content && node.content.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (node.summary && node.summary.toLowerCase().includes(searchQuery.toLowerCase()));
+          
+          ctx.save();
+          ctx.globalAlpha = isMatch ? 1 : 0.15;
+
           // Escala de calor refinada
           const hue = 220 - (node.importance * 220); 
           const saturation = 60 + (node.importance * 40);
@@ -223,6 +264,7 @@ export default function App() {
             ctx.font = `${isSelected ? 'bold ' : ''}${fontSize}px system-ui, sans-serif`;
             ctx.fillText(label, node.x + radius + 3, node.y + fontSize / 2);
           }
+          ctx.restore();
         }}
       />
 

@@ -43,5 +43,8 @@
   "logger": {
     "level": "info",
     "format": "pretty"
+  },
+  "chat": {
+    "model": "qwen3:8b"
   }
 }

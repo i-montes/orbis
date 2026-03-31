@@ -91,6 +91,14 @@
       }
     },
 
+    "chat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string" }
+      }
+    },
+
     "logger": {
       "type": "object",
       "additionalProperties": false,

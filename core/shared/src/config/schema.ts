@@ -106,6 +106,12 @@ export const configSchema = z.object({
     transport: 'stdio',
   }),
 
+  chat: z.object({
+    model: z.string().optional(),
+  }).optional().default({
+    model: undefined,
+  }),
+
   logger: z.object({
     level: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     format: z.enum(['pretty', 'json']).default('pretty'),

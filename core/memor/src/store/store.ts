@@ -231,7 +231,7 @@ export class MemorStore {
       WHERE sm.session_id = ?
       ORDER BY sm.relevance_score DESC
     `);
-    
+
     try {
       const rows = stmt.all(sessionId) as any[];
       return rows.map(row => this.mapRowToMemory(row));
@@ -240,6 +240,23 @@ export class MemorStore {
     }
   }
 
+  getUnconsolidatedMemories(limit: number = 50): Memory[] {
+    const stmt = this.db.prepare(`
+      SELECT m.*, 0 as connection_count
+      FROM memories m
+      WHERE m.memory_type = 'EXPERIENCE'
+        AND json_extract(m.metadata, '$.consolidated') = 0
+      ORDER BY m.created_at ASC
+      LIMIT ?
+    `);
+
+    try {
+      const rows = stmt.all(limit) as any[];
+      return rows.map(row => this.mapRowToMemory(row));
+    } catch (error) {
+      throw new DatabaseError('Failed to get unconsolidated memories', 'GET_UNCONSOLIDATED_MEMORIES_FAILED', error);
+    }
+  }
   countMemories(): number {
     const stmt = this.db.prepare('SELECT COUNT(*) as count FROM memories');
     

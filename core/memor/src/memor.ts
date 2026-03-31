@@ -98,6 +98,13 @@ export class Memor {
   }
 
   /**
+   * Obtiene recuerdos de tipo EXPERIENCE no consolidados.
+   */
+  getUnconsolidatedMemories(limit: number = 50): Memory[] {
+    return this.store.getUnconsolidatedMemories(limit);
+  }
+
+  /**
    * Clears all data from the memory store.
    */
   reset(): void {
